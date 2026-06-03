@@ -373,6 +373,132 @@
 .nm-notice-item--warning { border-right: 3px solid #eab308; }
 .nm-notice-item--error { border-right: 3px solid #ef4444; }
 
+.nm-sidebar__link.is-sub {
+	padding-right: 28px;
+	font-size: 12px;
+	opacity: 0.92;
+}
+
+.nm-sidebar__link.is-sub .nm-sidebar__icon {
+	font-size: 11px;
+}
+
+.nm-color-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.nm-color-field {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	font-size: 12px;
+}
+
+.nm-color-field input[type='color'] {
+	width: 44px;
+	height: 32px;
+	border: 1px solid var(--nm-border);
+	border-radius: 8px;
+	padding: 2px;
+	cursor: pointer;
+	background: #fff;
+}
+
+.nm-color-field input[type='range'] {
+	flex: 1;
+}
+
+.nm-preset-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-top: 14px;
+	font-size: 12px;
+}
+
+.nm-appearance-preview .nm-preview-card {
+	background: var(--cl-surface);
+	border: 1px solid var(--cl-border);
+	border-radius: var(--cl-radius);
+	padding: 18px;
+	box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.nm-preview-card__dot {
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--cl-gradient);
+	margin-bottom: 8px;
+}
+
+.nm-preview-card p {
+	margin: 6px 0 12px;
+	color: var(--cl-muted);
+	font-size: 12px;
+}
+
+.nm-preview-btn {
+	border: none;
+	border-radius: 10px;
+	padding: 8px 14px;
+	background: var(--cl-gradient);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: default;
+}
+
+.nm-jalali-picker-wrap { margin-top: 12px; max-width: 320px; }
+
+.nm-jalali-picker {
+	border: 1px solid var(--nm-border);
+	border-radius: 12px;
+	padding: 10px;
+	background: #fff;
+}
+
+.nm-jalali-picker__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 8px;
+	font-size: 13px;
+}
+
+.nm-jalali-picker__weekdays {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	text-align: center;
+	font-size: 11px;
+	color: var(--nm-muted);
+	margin-bottom: 4px;
+}
+
+.nm-jalali-picker__grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 4px;
+}
+
+.nm-jalali-day {
+	border: 1px solid transparent;
+	background: #f8fafc;
+	border-radius: 8px;
+	padding: 6px 0;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.nm-jalali-day.is-empty { background: transparent; cursor: default; }
+.nm-jalali-day.is-today { border-color: #c7d2fe; }
+.nm-jalali-day.is-active { background: var(--nm-gradient); color: #fff; }
+
 @media (max-width: 900px) {
 	.nm-shell { padding: 12px 8px; min-height: auto; }
 	.nm-window { height: auto; max-height: none; min-height: 70vh; }

@@ -99,6 +99,7 @@ class NobatMed_Admin {
 						'title'     => __( 'نوبت‌مد', 'nobatmed-core' ),
 						'dashboard' => __( 'داشبورد', 'nobatmed-core' ),
 						'modules'   => __( 'ماژول‌ها', 'nobatmed-core' ),
+						'appearance'=> __( 'ظاهر قالب', 'nobatmed-core' ),
 						'plugins'   => __( 'پلاگین‌ها', 'nobatmed-core' ),
 						'booking'   => __( 'نوبت‌دهی', 'nobatmed-core' ),
 						'addons'    => __( 'افزونه‌ها', 'nobatmed-core' ),
@@ -242,6 +243,7 @@ class NobatMed_Admin {
 				'plugins'  => $plugins,
 				'profiles' => $profiles,
 				'booking'  => $booking,
+				'appearance' => NobatMed_Theme_Appearance::get_for_api(),
 				'phase'    => array(
 					'label' => __( 'فاز ۱ — MVP', 'nobatmed-core' ),
 					'next'  => array(

@@ -10,13 +10,172 @@
 		return apiFetch({ path: '/nobatmed-core/v1' + path, ...options });
 	}
 
-	const ICONS = { dashboard: '◉', modules: '▦', plugins: '⬡', booking: '◷', addons: '✦', notices: '◈' };
+	const ICONS = { dashboard: '◉', modules: '▦', appearance: '◐', plugins: '⬡', booking: '◷', addons: '✦', notices: '◈' };
 
 	const DEV_STATUS = {
 		done: { label: 'آماده', className: 'nm-tag--done' },
 		progress: { label: 'در حال توسعه', className: 'nm-tag--progress' },
 		pending: { label: 'برنامه‌ریزی', className: 'nm-tag--pending' },
 	};
+
+	const JALALI_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+	const JALALI_WEEKDAYS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+
+	function gregorianToJalali(gy, gm, gd) {
+		const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+		let jy = gy <= 1600 ? 0 : 979;
+		gy -= gy <= 1600 ? 621 : 1600;
+		const gy2 = gm > 2 ? gy + 1 : gy;
+		let days =
+			365 * gy +
+			Math.floor((gy2 + 3) / 4) -
+			Math.floor((gy2 + 99) / 100) +
+			Math.floor((gy2 + 399) / 400) -
+			80 +
+			gd +
+			g_d_m[gm - 1];
+		jy += 33 * Math.floor(days / 12053);
+		days %= 12053;
+		jy += 4 * Math.floor(days / 1461);
+		days %= 1461;
+		if (days > 365) {
+			jy += Math.floor((days - 1) / 365);
+			days = (days - 1) % 365;
+		}
+		const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+		const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
+		return [jy, jm, jd];
+	}
+
+	function jalaliToGregorian(jy, jm, jd) {
+		let days = 365 * jy + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4) + 78 + jd + (jm < 7 ? (jm - 1) * 31 : (jm - 7) * 30 + 186);
+		let gy = 1600 + 400 * Math.floor(days / 146097);
+		days %= 146097;
+		let leap = true;
+		if (days >= 36525) {
+			days--;
+			gy += 100 * Math.floor(days / 36524);
+			days %= 36524;
+			if (days >= 365) days++;
+			else leap = false;
+		}
+		gy += 4 * Math.floor(days / 1461);
+		days %= 1461;
+		if (days >= 366) {
+			leap = false;
+			days--;
+			gy += Math.floor(days / 365);
+			days %= 365;
+		}
+		const gd_m = [0, 31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+		let gm = 0;
+		for (gm = 0; gm < 13 && days >= gd_m[gm]; gm++) days -= gd_m[gm];
+		return [gy, gm, days + 1];
+	}
+
+	function isoFromGregorian(gy, gm, gd) {
+		return gy + '-' + String(gm).padStart(2, '0') + '-' + String(gd).padStart(2, '0');
+	}
+
+	function jalaliMonthLength(jy, jm) {
+		if (jm <= 6) return 31;
+		if (jm <= 11) return 30;
+		const r = (((jy - (jy > 0 ? 474 : 473)) % 2820) + 474 + 2820) % 2820;
+		return (r + 38) * 682 % 2816 < 682 ? 30 : 29;
+	}
+
+	function jalaliWeekday(jy, jm, jd) {
+		const g = jalaliToGregorian(jy, jm, jd);
+		return (new Date(g[0], g[1] - 1, g[2]).getDay() + 1) % 7;
+	}
+
+	function formatJalaliLabel(iso) {
+		if (!iso) return '';
+		const p = iso.split('-').map(Number);
+		const j = gregorianToJalali(p[0], p[1], p[2]);
+		return j[0] + '/' + String(j[1]).padStart(2, '0') + '/' + String(j[2]).padStart(2, '0');
+	}
+
+	function JalaliDatePicker({ value, onChange }) {
+		const todayG = new Date();
+		const todayJ = gregorianToJalali(todayG.getFullYear(), todayG.getMonth() + 1, todayG.getDate());
+		const initial = value
+			? gregorianToJalali(...value.split('-').map(Number))
+			: todayJ;
+
+		const [viewYear, setViewYear] = useState(initial[0]);
+		const [viewMonth, setViewMonth] = useState(initial[1]);
+
+		useEffect(() => {
+			if (!value) return;
+			const j = gregorianToJalali(...value.split('-').map(Number));
+			setViewYear(j[0]);
+			setViewMonth(j[1]);
+		}, [value]);
+
+		const monthLen = jalaliMonthLength(viewYear, viewMonth);
+		const firstDay = jalaliWeekday(viewYear, viewMonth, 1);
+		const cells = [];
+		for (let i = 0; i < firstDay; i++) cells.push(null);
+		for (let d = 1; d <= monthLen; d++) cells.push(d);
+
+		const selectedJ = value ? gregorianToJalali(...value.split('-').map(Number)) : null;
+
+		const pickDay = (day) => {
+			const g = jalaliToGregorian(viewYear, viewMonth, day);
+			onChange(isoFromGregorian(g[0], g[1], g[2]));
+		};
+
+		const prevMonth = () => {
+			if (viewMonth === 1) {
+				setViewYear(viewYear - 1);
+				setViewMonth(12);
+			} else setViewMonth(viewMonth - 1);
+		};
+
+		const nextMonth = () => {
+			if (viewMonth === 12) {
+				setViewYear(viewYear + 1);
+				setViewMonth(1);
+			} else setViewMonth(viewMonth + 1);
+		};
+
+		return h('div', { className: 'nm-jalali-picker' }, [
+			h('div', { className: 'nm-jalali-picker__head', key: 'head' }, [
+				h('button', { type: 'button', className: 'nm-btn nm-btn--ghost nm-btn--sm', onClick: prevMonth }, '‹'),
+				h('strong', {}, JALALI_MONTHS[viewMonth - 1] + ' ' + viewYear),
+				h('button', { type: 'button', className: 'nm-btn nm-btn--ghost nm-btn--sm', onClick: nextMonth }, '›'),
+			]),
+			h('div', { className: 'nm-jalali-picker__weekdays', key: 'wd' }, JALALI_WEEKDAYS.map((d) => h('span', { key: d }, d))),
+			h(
+				'div',
+				{ className: 'nm-jalali-picker__grid', key: 'grid' },
+				cells.map((day, idx) =>
+					day
+						? h(
+								'button',
+								{
+									key: idx,
+									type: 'button',
+									className:
+										'nm-jalali-day' +
+										(selectedJ &&
+										selectedJ[0] === viewYear &&
+										selectedJ[1] === viewMonth &&
+										selectedJ[2] === day
+											? ' is-active'
+											: '') +
+										(todayJ[0] === viewYear && todayJ[1] === viewMonth && todayJ[2] === day ? ' is-today' : ''),
+									onClick: () => pickDay(day),
+								},
+								day
+						  )
+						: h('span', { key: idx, className: 'nm-jalali-day is-empty' })
+				)
+			),
+			value ? h('p', { className: 'nm-jalali-label', key: 'lbl' }, 'میلادی: ' + value + ' · شمسی: ' + formatJalaliLabel(value)) : null,
+		]);
+	}
 
 	function AppChrome({ children }) {
 		return h('div', { className: 'nm-shell' }, [
@@ -50,6 +209,7 @@
 		const items = [
 			{ id: 'dashboard', label: strings.dashboard || 'داشبورد' },
 			{ id: 'modules', label: strings.modules || 'ماژول‌ها' },
+			{ id: 'appearance', label: strings.appearance || 'ظاهر قالب', parent: 'modules' },
 			{ id: 'plugins', label: strings.plugins || 'پلاگین‌ها' },
 			{ id: 'booking', label: strings.booking || 'نوبت‌دهی' },
 			{ id: 'notices', label: strings.notices || 'اعلان‌ها' },
@@ -70,14 +230,20 @@
 						{
 							key: item.id,
 							type: 'button',
-							className: 'nm-sidebar__link' + (active === item.id ? ' is-active' : ''),
+							className:
+								'nm-sidebar__link' +
+								(active === item.id ? ' is-active' : '') +
+								(item.parent ? ' is-sub' : ''),
 							onClick: () => onNavigate(item.id),
 						},
-						[h('span', { className: 'nm-sidebar__icon' }, ICONS[item.id] || '•'), item.label]
+						[
+							h('span', { className: 'nm-sidebar__icon' }, item.parent ? '↳' : ICONS[item.id] || '•'),
+							item.label,
+						]
 					)
 				)
 			),
-			h('div', { className: 'nm-sidebar__footer', key: 'foot' }, 'v' + (cfg.version || '0.2.0')),
+			h('div', { className: 'nm-sidebar__footer', key: 'foot' }, 'v' + (cfg.version || '0.3.0')),
 		]);
 	}
 
@@ -139,6 +305,7 @@
 					h('div', { className: 'nm-panel__head' }, h('h3', {}, 'دسترسی سریع')),
 					h('div', { className: 'nm-quick-actions' }, [
 						h('button', { type: 'button', className: 'nm-btn nm-btn--outline', onClick: () => onNavigate('modules') }, 'مدیریت ماژول‌ها'),
+						h('button', { type: 'button', className: 'nm-btn nm-btn--outline', onClick: () => onNavigate('appearance') }, 'ظاهر قالب'),
 						h('button', { type: 'button', className: 'nm-btn nm-btn--outline', onClick: () => onNavigate('plugins') }, 'پلاگین‌های پیشنهادی'),
 						h('button', { type: 'button', className: 'nm-btn nm-btn--outline', onClick: () => onNavigate('booking') }, 'نوبت‌دهی'),
 						h('button', { type: 'button', className: 'nm-btn nm-btn--outline', onClick: () => onNavigate('notices') }, 'اعلان‌های Orbit'),
@@ -373,6 +540,153 @@
 							)
 					  )
 					: h('p', {}, 'اعلانی دریافت نشده — پس از راه‌اندازی Orbit Hub، همگام‌سازی کنید.'),
+			]),
+		]);
+	}
+
+	function AppearancePage({ appearance, onUpdate }) {
+		const [settings, setSettings] = useState((appearance && appearance.settings) || {});
+		const [presets, setPresets] = useState((appearance && appearance.presets) || {});
+		const [themeActive, setThemeActive] = useState(appearance ? appearance.themeActive : true);
+		const [saving, setSaving] = useState(false);
+		const [notice, setNotice] = useState(null);
+
+		useEffect(() => {
+			if (!appearance) {
+				request('/appearance').then((res) => {
+					if (res.data) {
+						setSettings(res.data.settings || {});
+						setPresets(res.data.presets || {});
+						setThemeActive(res.data.themeActive);
+						onUpdate(res.data);
+					}
+				});
+				return;
+			}
+			setSettings(appearance.settings || {});
+			setPresets(appearance.presets || {});
+			setThemeActive(appearance.themeActive);
+		}, [appearance]);
+
+		const fields = [
+			{ key: 'brand', label: 'رنگ اصلی' },
+			{ key: 'brand_2', label: 'رنگ ثانویه' },
+			{ key: 'accent', label: 'رنگ accent' },
+			{ key: 'text', label: 'متن' },
+			{ key: 'muted', label: 'متن فرعی' },
+			{ key: 'bg', label: 'پس‌زمینه' },
+			{ key: 'surface', label: 'سطح کارت' },
+			{ key: 'border', label: 'حاشیه' },
+		];
+
+		const previewStyle = {
+			'--cl-brand': settings.brand,
+			'--cl-brand-2': settings.brand_2,
+			'--cl-text': settings.text,
+			'--cl-muted': settings.muted,
+			'--cl-bg': settings.bg,
+			'--cl-surface': settings.surface,
+			'--cl-border': settings.border,
+			'--cl-radius': (settings.radius || 14) + 'px',
+			'--cl-gradient': 'linear-gradient(140deg, ' + settings.brand + ' 0%, ' + settings.brand_2 + ' 55%, ' + settings.accent + ' 100%)',
+		};
+
+		const save = () => {
+			setSaving(true);
+			setNotice(null);
+			request('/appearance', { method: 'POST', data: { settings } })
+				.then((res) => {
+					setNotice({ type: res.success ? 'success' : 'error', text: res.message || 'ذخیره شد.' });
+					if (res.data) {
+						setSettings(res.data.settings || {});
+						onUpdate(res.data);
+					}
+				})
+				.finally(() => setSaving(false));
+		};
+
+		const reset = () => {
+			setSaving(true);
+			request('/appearance', { method: 'POST', data: { reset: true } })
+				.then((res) => {
+					setNotice({ type: 'success', text: res.message || 'بازنشانی شد.' });
+					if (res.data) {
+						setSettings(res.data.settings || {});
+						onUpdate(res.data);
+					}
+				})
+				.finally(() => setSaving(false));
+		};
+
+		const applyPreset = (preset) => {
+			setSettings({ ...settings, ...preset });
+		};
+
+		return h('div', { className: 'nm-page' }, [
+			h('header', { className: 'nm-page-header nm-page-header--row', key: 'head' }, [
+				h('div', {}, [
+					h('h2', {}, 'ظاهر قالب'),
+					h('p', {}, 'رنگ‌ها، پس‌زمینه و گردی گوشه‌ها — مستقیم روی قالب NobatMed اعمال می‌شود.'),
+				]),
+				h('div', { className: 'nm-quick-actions' }, [
+					h('button', { type: 'button', className: 'nm-btn nm-btn--outline', disabled: saving, onClick: reset }, 'بازنشانی'),
+					h('button', { type: 'button', className: 'nm-btn nm-btn--primary', disabled: saving, onClick: save }, saving ? 'در حال ذخیره...' : 'ذخیره'),
+				]),
+			]),
+			!themeActive
+				? h('div', { className: 'nm-notice nm-notice--warning', key: 'warn' }, 'قالب NobatMed فعال نیست — تنظیمات پس از فعال‌سازی قالب روی سایت اعمال می‌شوند.')
+				: null,
+			notice ? h('div', { className: 'nm-notice nm-notice--' + notice.type, key: 'n' }, notice.text) : null,
+			h('div', { className: 'nm-grid-2', key: 'grid' }, [
+				h('section', { className: 'nm-panel', key: 'colors' }, [
+					h('div', { className: 'nm-panel__head' }, h('h3', {}, 'رنگ‌ها و استایل')),
+					h('div', { className: 'nm-color-grid' }, [
+						...fields.map((f) =>
+							h('label', { key: f.key, className: 'nm-color-field' }, [
+								h('span', {}, f.label),
+								h('input', {
+									type: 'color',
+									value: settings[f.key] || '#000000',
+									onChange: (e) => setSettings({ ...settings, [f.key]: e.target.value }),
+								}),
+							])
+						),
+						h('label', { className: 'nm-color-field', key: 'radius' }, [
+							h('span', {}, 'گردی گوشه (' + (settings.radius || 14) + 'px)'),
+							h('input', {
+								type: 'range',
+								min: 4,
+								max: 32,
+								value: settings.radius || 14,
+								onChange: (e) => setSettings({ ...settings, radius: parseInt(e.target.value, 10) }),
+							}),
+						]),
+					]),
+					h('div', { className: 'nm-preset-row', key: 'presets' }, [
+						h('span', {}, 'پالت آماده:'),
+						...Object.entries(presets).map(([id, preset]) =>
+							h(
+								'button',
+								{
+									key: id,
+									type: 'button',
+									className: 'nm-btn nm-btn--outline nm-btn--sm',
+									onClick: () => applyPreset(preset),
+								},
+								preset.label || id
+							)
+						),
+					]),
+				]),
+				h('section', { className: 'nm-panel nm-appearance-preview', key: 'preview', style: previewStyle }, [
+					h('div', { className: 'nm-panel__head' }, h('h3', {}, 'پیش‌نمایش')),
+					h('div', { className: 'nm-preview-card' }, [
+						h('span', { className: 'nm-preview-card__dot' }),
+						h('strong', {}, 'نوبت‌مد'),
+						h('p', {}, 'نمونه دکمه و کارت با رنگ‌های انتخاب‌شده'),
+						h('button', { type: 'button', className: 'nm-preview-btn' }, 'رزرو نوبت'),
+					]),
+				]),
 			]),
 		]);
 	}
@@ -648,11 +962,6 @@
 						{ value: bookForm.service_id, onChange: (e) => setBookForm({ ...bookForm, service_id: e.target.value }) },
 						selectOptions(options.services, 'خدمت')
 					),
-					h('input', {
-						type: 'date',
-						value: bookForm.date,
-						onChange: (e) => setBookForm({ ...bookForm, date: e.target.value, slot: null }),
-					}),
 					h(
 						'select',
 						{ value: bookForm.visit_type, onChange: (e) => setBookForm({ ...bookForm, visit_type: e.target.value }) },
@@ -663,7 +972,17 @@
 					),
 					h('button', { type: 'button', className: 'nm-btn nm-btn--outline nm-btn--sm', onClick: loadSlots }, 'نمایش اسلات‌ها'),
 				]),
-				jalali ? h('p', { className: 'nm-jalali-label', key: 'jl' }, 'تاریخ شمسی: ' + jalali) : null,
+				h('div', { className: 'nm-jalali-picker-wrap', key: 'cal' }, [
+					h('p', { className: 'nm-panel__meta' }, 'تاریخ نوبت (تقویم شمسی)'),
+					h(JalaliDatePicker, {
+						value: bookForm.date,
+						onChange: (iso) => {
+							setBookForm({ ...bookForm, date: iso, slot: null });
+							setSlots([]);
+							setJalali(formatJalaliLabel(iso));
+						},
+					}),
+				]),
 				slots.length
 					? h(
 							'div',
@@ -731,7 +1050,7 @@
 											{},
 											appointments.map((row) =>
 												h('tr', { key: row.id }, [
-													h('td', {}, row.appointment_date),
+													h('td', {}, row.appointment_date + (row.appointment_date ? ' · ' + formatJalaliLabel(row.appointment_date) : '')),
 													h('td', {}, row.doctor_title || row.doctor_id),
 													h('td', {}, row.start_time),
 													h('td', {}, row.status),
@@ -842,6 +1161,7 @@
 		const titles = {
 			dashboard: strings.dashboard || 'داشبورد',
 			modules: strings.modules || 'ماژول‌ها',
+			appearance: strings.appearance || 'ظاهر قالب',
 			plugins: strings.plugins || 'پلاگین‌ها',
 			booking: strings.booking || 'نوبت‌دهی',
 			notices: strings.notices || 'اعلان‌ها',
@@ -860,6 +1180,12 @@
 								onUpdate: (mods) => setData({ ...data, modules: mods }),
 								saving,
 								setSaving,
+						  })
+						: null,
+					page === 'appearance'
+						? h(AppearancePage, {
+								appearance: data.appearance,
+								onUpdate: (appearance) => setData({ ...data, appearance }),
 						  })
 						: null,
 					page === 'plugins'
