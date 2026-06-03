@@ -450,14 +450,24 @@ class NobatMed_Theme_Appearance {
 	}
 
 	public static function build_admin_css(): string {
+		return self::build_wp_admin_font_css();
+	}
+
+	/**
+	 * Font CSS for entire wp-admin when font_apply_admin is enabled.
+	 */
+	public static function build_wp_admin_font_css(): string {
 		$s = self::get_settings();
 		if ( empty( $s['font_apply_admin'] ) ) {
 			return '';
 		}
 
-		$css  = self::build_font_face_css();
-		$css .= ':root{--nm-font-family:' . self::get_font_family_stack() . ';}';
-		$css .= '.nobatmed-core-wrap,.nobatmed-core-wrap .nm-shell{font-family:var(--nm-font-family);}';
+		$stack = self::get_font_family_stack();
+		$css   = self::build_font_face_css();
+		$css  .= ':root{--nm-font-family:' . $stack . ';}';
+		$css  .= 'body.wp-admin,#wpbody,#wpbody-content,#wpcontent,.wrap,.wp-core-ui,.about-wrap{font-family:var(--nm-font-family) !important;}';
+		$css  .= 'input,select,textarea,button,.button{font-family:inherit;}';
+		$css  .= '.nobatmed-core-wrap,.nobatmed-core-wrap .nm-shell{font-family:var(--nm-font-family);}';
 
 		return apply_filters( 'nobatmed_theme_appearance_admin_css', $css, $s );
 	}
@@ -471,13 +481,24 @@ class NobatMed_Theme_Appearance {
 	}
 
 	public static function enqueue_admin_font_assets( string $hook ): void {
-		if ( ! self::is_core_admin_screen( $hook ) ) {
+		unset( $hook );
+		if ( ! is_admin() || empty( self::get_settings()['font_apply_admin'] ) ) {
 			return;
 		}
-		if ( empty( self::get_settings()['font_apply_admin'] ) ) {
-			return;
+
+		self::register_wp_admin_style();
+		self::enqueue_font_stylesheet( 'nobatmed-appearance-wp-admin-font' );
+	}
+
+	private static function register_wp_admin_style(): void {
+		if ( ! wp_style_is( 'nobatmed-appearance-wp-admin', 'registered' ) ) {
+			wp_register_style(
+				'nobatmed-appearance-wp-admin',
+				false,
+				array(),
+				NOBATMED_CORE_VERSION
+			);
 		}
-		self::enqueue_font_stylesheet( 'nobatmed-appearance-font-admin' );
 	}
 
 	private static function enqueue_font_stylesheet( string $handle ): void {
@@ -512,16 +533,19 @@ class NobatMed_Theme_Appearance {
 	}
 
 	public static function enqueue_admin_css( string $hook ): void {
-		if ( ! self::is_core_admin_screen( $hook ) ) {
+		unset( $hook );
+		if ( ! is_admin() || empty( self::get_settings()['font_apply_admin'] ) ) {
 			return;
 		}
 
-		$css = self::build_admin_css();
-		if ( '' === $css || ! wp_style_is( 'nobatmed-core-admin', 'enqueued' ) ) {
+		$css = self::build_wp_admin_font_css();
+		if ( '' === $css ) {
 			return;
 		}
 
-		wp_add_inline_style( 'nobatmed-core-admin', $css );
+		self::register_wp_admin_style();
+		wp_enqueue_style( 'nobatmed-appearance-wp-admin' );
+		wp_add_inline_style( 'nobatmed-appearance-wp-admin', $css );
 	}
 
 	public static function enqueue_elementor_font_css(): void {
@@ -529,6 +553,8 @@ class NobatMed_Theme_Appearance {
 		if ( empty( $s['font_apply_elementor'] ) ) {
 			return;
 		}
+
+		self::enqueue_font_stylesheet( 'nobatmed-appearance-elementor-font' );
 
 		$css  = self::build_font_face_css();
 		$css .= ':root{--cl-font-family:' . self::get_font_family_stack() . ';}';

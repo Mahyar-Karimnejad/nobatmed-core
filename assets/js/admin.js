@@ -10,7 +10,7 @@
 		return apiFetch({ path: '/nobatmed-core/v1' + path, ...options });
 	}
 
-	const ICONS = { dashboard: '◉', modules: '▦', appearance: '◐', plugins: '⬡', booking: '◷', addons: '✦', notices: '◈', importexport: '⇅', importdemo: '⬇' };
+	const ICONS = { dashboard: '◉', modules: '▦', appearance: '◐', plugins: '⬡', booking: '◷', addons: '✦', notices: '◈', importexport: '⇅' };
 
 	const DEV_STATUS = {
 		done: { label: 'آماده', className: 'nm-tag--done' },
@@ -215,7 +215,6 @@
 			{ id: 'notices', label: strings.notices || 'اعلان‌ها' },
 			{ id: 'addons', label: strings.addons || 'افزونه‌ها' },
 			{ id: 'importexport', label: strings.importexport || 'Import / Export', parent: 'addons' },
-			{ id: 'importdemo', label: strings.importdemo || 'Import Demo' },
 		];
 
 		return h('aside', { className: 'nm-sidebar' }, [
@@ -1613,7 +1612,11 @@
 			return h(AppChrome, {}, h(LicensePanel));
 		}
 
-		const [page, setPage] = useState(cfg.initialPage || 'dashboard');
+		if (cfg.initialPage === 'importdemo') {
+			return h(AppChrome, {}, h('div', { className: 'nm-app nm-app--standalone' }, h(ImportDemoPage)));
+		}
+
+		const [page, setPage] = useState('dashboard');
 		const [data, setData] = useState(null);
 		const [loading, setLoading] = useState(true);
 		const [error, setError] = useState(null);
@@ -1652,7 +1655,6 @@
 			notices: strings.notices || 'اعلان‌ها',
 			addons: strings.addons || 'افزونه‌ها',
 			importexport: strings.importexport || 'Import / Export',
-			importdemo: strings.importdemo || 'Import Demo',
 		};
 
 		return h(AppChrome, {}, h('div', { className: 'nm-app' }, [
@@ -1697,7 +1699,6 @@
 						: null,
 					page === 'addons' ? h(AddonsPage, { modules: data.modules || [] }) : null,
 					page === 'importexport' ? h(ImportExportPage) : null,
-					page === 'importdemo' ? h(ImportDemoPage) : null,
 				]),
 			]),
 		]));

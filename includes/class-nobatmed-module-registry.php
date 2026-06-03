@@ -116,7 +116,11 @@ class NobatMed_Module_Registry {
 				'integrations',
 				'email',
 				1,
-				array( 'orbitProduct' => 'nobatmed-otp' )
+				array(
+					'implemented'  => true,
+					'devStatus'    => 'progress',
+					'orbitProduct' => 'nobatmed-otp',
+				)
 			),
 			'payment'           => self::entry(
 				'payment',

@@ -308,7 +308,14 @@
 	color: var(--nm-muted);
 }
 
-.nm-demo-grid {
+.nm-app--standalone {
+	display: block;
+	min-height: 100%;
+}
+
+.nm-app--standalone .nm-page {
+	padding: 20px 24px;
+}
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 	gap: 12px;

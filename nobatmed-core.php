@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       NobatMed Core
  * Description:       هسته ماژولار نوبت‌مد — پروفایل، نوبت‌دهی و اکوسیستم افزونه‌ها.
- * Version:           0.3.4
+ * Version:           0.3.5
  * Requires at least: 6.5
  * Requires PHP:      8.0
  * Author:            Nexaverse
@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const NOBATMED_CORE_VERSION = '0.3.4';
+const NOBATMED_CORE_VERSION = '0.3.5';
 const NOBATMED_CORE_FILE    = __FILE__;
 const NOBATMED_CORE_PATH    = __DIR__ . '/';
 
@@ -36,6 +36,7 @@ require_once NOBATMED_CORE_PATH . 'includes/modules/class-module-roles.php';
 require_once NOBATMED_CORE_PATH . 'includes/modules/class-module-profiles.php';
 require_once NOBATMED_CORE_PATH . 'includes/modules/class-module-booking.php';
 require_once NOBATMED_CORE_PATH . 'includes/modules/class-module-elementor.php';
+require_once NOBATMED_CORE_PATH . 'includes/modules/class-module-otp-sms.php';
 require_once NOBATMED_CORE_PATH . 'includes/class-nobatmed-classic-editor.php';
 require_once NOBATMED_CORE_PATH . 'includes/class-nobatmed-orbit-bridge.php';
 require_once NOBATMED_CORE_PATH . 'includes/class-nobatmed-theme-appearance.php';
