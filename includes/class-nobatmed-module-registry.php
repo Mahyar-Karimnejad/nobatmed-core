@@ -79,10 +79,10 @@ class NobatMed_Module_Registry {
 			),
 
 			// --- فاز ۱ — در صف توسعه ---
-			'elementor-widgets' => self::entry(
+			'elementor-widgets'   => self::entry(
 				'elementor-widgets',
-				__( 'ویجت‌های Elementor', 'nobatmed-core' ),
-				__( 'فرم نوبت، لیست پزشک، جستجو و…', 'nobatmed-core' ),
+				__( 'ویجت‌های Elementor (پایه)', 'nobatmed-core' ),
+				__( '۱۰ ویجت رایگان در Core — فرم نوبت، لیست پزشک، جستجو.', 'nobatmed-core' ),
 				'elementor',
 				'layout',
 				1,
@@ -90,6 +90,20 @@ class NobatMed_Module_Registry {
 					'requires'        => 'elementor/elementor.php',
 					'orbitProduct'    => 'nobatmed-elementor',
 					'addonPluginFile' => '',
+				)
+			),
+			'elementor-widget-pack' => self::entry(
+				'elementor-widget-pack',
+				__( 'Elementor Widget Pack', 'nobatmed-core' ),
+				__( 'پک Premium — ۳۲+ ویجت اضافی با خرید addon جداگانه.', 'nobatmed-core' ),
+				'addons',
+				'star-filled',
+				1,
+				array(
+					'type'            => 'addon',
+					'requires'        => 'elementor/elementor.php',
+					'orbitProduct'    => 'nobatmed-elementor-pack',
+					'addonPluginFile' => 'nobatmed-elementor-pack/nobatmed-elementor-pack.php',
 				)
 			),
 			'otp-sms'           => self::entry(

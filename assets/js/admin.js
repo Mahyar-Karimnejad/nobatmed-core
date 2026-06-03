@@ -544,9 +544,28 @@
 		]);
 	}
 
+	function pickFontFile(onSelect) {
+		if (!window.wp || !window.wp.media) {
+			window.alert('کتابخانه رسانه وردپرس در دسترس نیست.');
+			return;
+		}
+		const frame = window.wp.media({
+			title: 'انتخاب فایل فونت',
+			button: { text: 'انتخاب' },
+			multiple: false,
+		});
+		frame.on('select', () => {
+			const att = frame.state().get('selection').first().toJSON();
+			onSelect({ id: att.id, url: att.url, filename: att.filename || att.title || 'font' });
+		});
+		frame.open();
+	}
+
 	function AppearancePage({ appearance, onUpdate }) {
 		const [settings, setSettings] = useState((appearance && appearance.settings) || {});
 		const [presets, setPresets] = useState((appearance && appearance.presets) || {});
+		const [fontPresets, setFontPresets] = useState((appearance && appearance.fontPresets) || {});
+		const [fontFiles, setFontFiles] = useState((appearance && appearance.fontFiles) || {});
 		const [themeActive, setThemeActive] = useState(appearance ? appearance.themeActive : true);
 		const [saving, setSaving] = useState(false);
 		const [notice, setNotice] = useState(null);
@@ -557,6 +576,8 @@
 					if (res.data) {
 						setSettings(res.data.settings || {});
 						setPresets(res.data.presets || {});
+						setFontPresets(res.data.fontPresets || {});
+						setFontFiles(res.data.fontFiles || {});
 						setThemeActive(res.data.themeActive);
 						onUpdate(res.data);
 					}
@@ -565,6 +586,8 @@
 			}
 			setSettings(appearance.settings || {});
 			setPresets(appearance.presets || {});
+			setFontPresets(appearance.fontPresets || {});
+			setFontFiles(appearance.fontFiles || {});
 			setThemeActive(appearance.themeActive);
 		}, [appearance]);
 
@@ -589,6 +612,16 @@
 			'--cl-border': settings.border,
 			'--cl-radius': (settings.radius || 14) + 'px',
 			'--cl-gradient': 'linear-gradient(140deg, ' + settings.brand + ' 0%, ' + settings.brand_2 + ' 55%, ' + settings.accent + ' 100%)',
+			'--cl-font-family': settings.font_mode === 'upload' || settings.font_mode === 'external'
+				? (settings.font_family_name || 'CustomFont') + ', Tahoma, sans-serif'
+				: settings.font_mode === 'preset' && fontPresets[settings.font_preset]
+				? fontPresets[settings.font_preset].family
+				: 'Vazir, Tahoma, sans-serif',
+			fontFamily: settings.font_mode === 'upload' || settings.font_mode === 'external'
+				? (settings.font_family_name || 'CustomFont') + ', Tahoma, sans-serif'
+				: settings.font_mode === 'preset' && fontPresets[settings.font_preset]
+				? fontPresets[settings.font_preset].family
+				: 'Vazir, Tahoma, sans-serif',
 		};
 
 		const save = () => {
@@ -599,6 +632,7 @@
 					setNotice({ type: res.success ? 'success' : 'error', text: res.message || 'ذخیره شد.' });
 					if (res.data) {
 						setSettings(res.data.settings || {});
+						setFontFiles(res.data.fontFiles || {});
 						onUpdate(res.data);
 					}
 				})
@@ -626,7 +660,7 @@
 			h('header', { className: 'nm-page-header nm-page-header--row', key: 'head' }, [
 				h('div', {}, [
 					h('h2', {}, 'ظاهر قالب'),
-					h('p', {}, 'رنگ‌ها، پس‌زمینه و گردی گوشه‌ها — مستقیم روی قالب NobatMed اعمال می‌شود.'),
+					h('p', {}, 'رنگ‌ها، فونت و گردی گوشه‌ها — روی قالب، پنل ادمین و ویجت‌های Elementor.'),
 				]),
 				h('div', { className: 'nm-quick-actions' }, [
 					h('button', { type: 'button', className: 'nm-btn nm-btn--outline', disabled: saving, onClick: reset }, 'بازنشانی'),
@@ -678,12 +712,136 @@
 						),
 					]),
 				]),
+				h('section', { className: 'nm-panel', key: 'fonts' }, [
+					h('div', { className: 'nm-panel__head' }, h('h3', {}, 'فونت')),
+					h('div', { className: 'nm-form-row nm-form-row--stack' }, [
+						h('label', { className: 'nm-field-label' }, 'منبع فونت'),
+						h(
+							'select',
+							{
+								value: settings.font_mode || 'default',
+								onChange: (e) => setSettings({ ...settings, font_mode: e.target.value }),
+							},
+							[
+								h('option', { value: 'default' }, 'پیش‌فرض (Vazir)'),
+								h('option', { value: 'preset' }, 'فونت آماده'),
+								h('option', { value: 'upload' }, 'آپلود فونت (woff/woff2/ttf)'),
+								h('option', { value: 'external' }, 'لینک CSS خارجی'),
+							]
+						),
+					]),
+					settings.font_mode === 'preset'
+						? h('div', { className: 'nm-form-row nm-form-row--stack', key: 'fp' }, [
+								h('label', { className: 'nm-field-label' }, 'فونت آماده'),
+								h(
+									'select',
+									{
+										value: settings.font_preset || 'vazir',
+										onChange: (e) => setSettings({ ...settings, font_preset: e.target.value }),
+									},
+									Object.entries(fontPresets).map(([id, p]) => h('option', { key: id, value: id }, p.label || id))
+								),
+						  ])
+						: null,
+					settings.font_mode === 'upload'
+						? h('div', { className: 'nm-font-upload', key: 'fu' }, [
+								h('label', { className: 'nm-field-label' }, 'نام فونت (font-family)'),
+								h('input', {
+									type: 'text',
+									value: settings.font_family_name || '',
+									placeholder: 'مثلاً MyClinicFont',
+									onChange: (e) => setSettings({ ...settings, font_family_name: e.target.value }),
+								}),
+								h('div', { className: 'nm-font-upload__row' }, [
+									h('div', {}, [
+										h('strong', {}, 'Regular'),
+										h('p', {}, (fontFiles.regular && fontFiles.regular.filename) || 'انتخاب نشده'),
+										h(
+											'button',
+											{
+												type: 'button',
+												className: 'nm-btn nm-btn--outline nm-btn--sm',
+												onClick: () =>
+													pickFontFile((file) => {
+														setFontFiles({ ...fontFiles, regular: file });
+														setSettings({ ...settings, font_regular_id: file.id });
+													}),
+											},
+											'انتخاب فایل'
+										),
+									]),
+									h('div', {}, [
+										h('strong', {}, 'Bold (اختیاری)'),
+										h('p', {}, (fontFiles.bold && fontFiles.bold.filename) || 'انتخاب نشده'),
+										h(
+											'button',
+											{
+												type: 'button',
+												className: 'nm-btn nm-btn--outline nm-btn--sm',
+												onClick: () =>
+													pickFontFile((file) => {
+														setFontFiles({ ...fontFiles, bold: file });
+														setSettings({ ...settings, font_bold_id: file.id });
+													}),
+											},
+											'انتخاب فایل'
+										),
+									]),
+								]),
+						  ])
+						: null,
+					settings.font_mode === 'external'
+						? h('div', { className: 'nm-form-row nm-form-row--stack', key: 'fe' }, [
+								h('label', { className: 'nm-field-label' }, 'نام فونت'),
+								h('input', {
+									type: 'text',
+									value: settings.font_family_name || '',
+									onChange: (e) => setSettings({ ...settings, font_family_name: e.target.value }),
+								}),
+								h('label', { className: 'nm-field-label' }, 'URL فایل CSS (@font-face)'),
+								h('input', {
+									type: 'url',
+									value: settings.font_external_url || '',
+									placeholder: 'https://...',
+									onChange: (e) => setSettings({ ...settings, font_external_url: e.target.value }),
+								}),
+						  ])
+						: null,
+					h('div', { className: 'nm-font-apply', key: 'apply' }, [
+						h('span', { className: 'nm-field-label' }, 'اعمال فونت روی:'),
+						h('label', { className: 'nm-check-inline' }, [
+							h('input', {
+								type: 'checkbox',
+								checked: settings.font_apply_frontend !== false,
+								onChange: (e) => setSettings({ ...settings, font_apply_frontend: e.target.checked }),
+							}),
+							'قالب (فرانت)',
+						]),
+						h('label', { className: 'nm-check-inline' }, [
+							h('input', {
+								type: 'checkbox',
+								checked: settings.font_apply_admin !== false,
+								onChange: (e) => setSettings({ ...settings, font_apply_admin: e.target.checked }),
+							}),
+							'پنل ادمین نوبت‌مد',
+						]),
+						h('label', { className: 'nm-check-inline' }, [
+							h('input', {
+								type: 'checkbox',
+								checked: settings.font_apply_elementor !== false,
+								onChange: (e) => setSettings({ ...settings, font_apply_elementor: e.target.checked }),
+							}),
+							'ویجت Elementor',
+						]),
+					]),
+					h('p', { className: 'nm-panel__meta' }, 'برای ویجت‌های آینده از تابع nobatmed_get_appearance_font_family() استفاده کنید.'),
+				]),
 				h('section', { className: 'nm-panel nm-appearance-preview', key: 'preview', style: previewStyle }, [
 					h('div', { className: 'nm-panel__head' }, h('h3', {}, 'پیش‌نمایش')),
 					h('div', { className: 'nm-preview-card' }, [
 						h('span', { className: 'nm-preview-card__dot' }),
 						h('strong', {}, 'نوبت‌مد'),
-						h('p', {}, 'نمونه دکمه و کارت با رنگ‌های انتخاب‌شده'),
+						h('p', {}, 'نمونه متن و دکمه با رنگ و فونت انتخاب‌شده'),
 						h('button', { type: 'button', className: 'nm-preview-btn' }, 'رزرو نوبت'),
 					]),
 				]),

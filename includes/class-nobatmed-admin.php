@@ -68,6 +68,7 @@ class NobatMed_Admin {
 		);
 
 		wp_enqueue_style( 'dashicons' );
+		wp_enqueue_media();
 		wp_enqueue_style(
 			'nobatmed-core-admin',
 			NOBATMED_CORE_URL . 'assets/css/admin.css',
