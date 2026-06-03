@@ -45,6 +45,13 @@ class NobatMed_Module_Elementor extends NobatMed_Module {
 		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-doctor-list.php';
 		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-doctor-search.php';
 		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-booking-form.php';
+		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-clinic-list.php';
+		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-service-list.php';
+		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-doctor-card.php';
+		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-clinic-card.php';
+		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-specialty-filter.php';
+		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-schedule-table.php';
+		require_once NOBATMED_CORE_PATH . 'includes/modules/elementor/widgets/class-widget-service-card.php';
 
 		add_action( 'elementor/elements/categories_registered', array( $this, 'register_category' ) );
 		add_action( 'elementor/widgets/register', array( $this, 'register_widgets' ) );
@@ -62,6 +69,13 @@ class NobatMed_Module_Elementor extends NobatMed_Module {
 		$widgets_manager->register( new NobatMed_Widget_Doctor_List() );
 		$widgets_manager->register( new NobatMed_Widget_Doctor_Search() );
 		$widgets_manager->register( new NobatMed_Widget_Booking_Form() );
+		$widgets_manager->register( new NobatMed_Widget_Clinic_List() );
+		$widgets_manager->register( new NobatMed_Widget_Service_List() );
+		$widgets_manager->register( new NobatMed_Widget_Doctor_Card() );
+		$widgets_manager->register( new NobatMed_Widget_Clinic_Card() );
+		$widgets_manager->register( new NobatMed_Widget_Specialty_Filter() );
+		$widgets_manager->register( new NobatMed_Widget_Schedule_Table() );
+		$widgets_manager->register( new NobatMed_Widget_Service_Card() );
 	}
 
 	public function enqueue_widget_assets(): void {

@@ -10,7 +10,7 @@
 		return apiFetch({ path: '/nobatmed-core/v1' + path, ...options });
 	}
 
-	const ICONS = { dashboard: '◉', modules: '▦', appearance: '◐', plugins: '⬡', booking: '◷', addons: '✦', notices: '◈', importexport: '⇅' };
+	const ICONS = { dashboard: '◉', modules: '▦', appearance: '◐', plugins: '⬡', booking: '◷', addons: '✦', notices: '◈', importexport: '⇅', importdemo: '⬇' };
 
 	const DEV_STATUS = {
 		done: { label: 'آماده', className: 'nm-tag--done' },
@@ -215,6 +215,7 @@
 			{ id: 'notices', label: strings.notices || 'اعلان‌ها' },
 			{ id: 'addons', label: strings.addons || 'افزونه‌ها' },
 			{ id: 'importexport', label: strings.importexport || 'Import / Export', parent: 'addons' },
+			{ id: 'importdemo', label: strings.importdemo || 'Import Demo' },
 		];
 
 		return h('aside', { className: 'nm-sidebar' }, [
@@ -575,10 +576,18 @@
 			if (!appearance) {
 				request('/appearance').then((res) => {
 					if (res.data) {
-						setSettings(res.data.settings || {});
+						const s = res.data.settings || {};
+						if ((!s.font_weights || !s.font_weights.length) && res.data.fontFiles?.weights?.length) {
+							s.font_weights = res.data.fontFiles.weights.map((w) => ({
+								weight: w.weight,
+								style: w.style,
+								attachment_id: w.attachment_id,
+							}));
+						}
+						setSettings(s);
 						setPresets(res.data.presets || {});
 						setFontPresets(res.data.fontPresets || {});
-						setFontFiles(res.data.fontFiles || {});
+						setFontFiles(res.data.fontFiles || { weights: [] });
 						setThemeActive(res.data.themeActive);
 						onUpdate(res.data);
 					}
@@ -588,7 +597,17 @@
 			setSettings(appearance.settings || {});
 			setPresets(appearance.presets || {});
 			setFontPresets(appearance.fontPresets || {});
-			setFontFiles(appearance.fontFiles || {});
+			setFontFiles(appearance.fontFiles || { weights: [] });
+			if (!appearance.settings?.font_weights?.length && appearance.fontFiles?.weights?.length) {
+				setSettings((prev) => ({
+					...prev,
+					font_weights: appearance.fontFiles.weights.map((w) => ({
+						weight: w.weight,
+						style: w.style,
+						attachment_id: w.attachment_id,
+					})),
+				}));
+			}
 			setThemeActive(appearance.themeActive);
 		}, [appearance]);
 
@@ -632,8 +651,16 @@
 				.then((res) => {
 					setNotice({ type: res.success ? 'success' : 'error', text: res.message || 'ذخیره شد.' });
 					if (res.data) {
-						setSettings(res.data.settings || {});
-						setFontFiles(res.data.fontFiles || {});
+						const s = res.data.settings || {};
+						if ((!s.font_weights || !s.font_weights.length) && res.data.fontFiles?.weights?.length) {
+							s.font_weights = res.data.fontFiles.weights.map((w) => ({
+								weight: w.weight,
+								style: w.style,
+								attachment_id: w.attachment_id,
+							}));
+						}
+						setSettings(s);
+						setFontFiles(res.data.fontFiles || { weights: [] });
 						onUpdate(res.data);
 					}
 				})
@@ -713,130 +740,6 @@
 						),
 					]),
 				]),
-				h('section', { className: 'nm-panel', key: 'fonts' }, [
-					h('div', { className: 'nm-panel__head' }, h('h3', {}, 'فونت')),
-					h('div', { className: 'nm-form-row nm-form-row--stack' }, [
-						h('label', { className: 'nm-field-label' }, 'منبع فونت'),
-						h(
-							'select',
-							{
-								value: settings.font_mode || 'default',
-								onChange: (e) => setSettings({ ...settings, font_mode: e.target.value }),
-							},
-							[
-								h('option', { value: 'default' }, 'پیش‌فرض (Vazir)'),
-								h('option', { value: 'preset' }, 'فونت آماده'),
-								h('option', { value: 'upload' }, 'آپلود فونت (woff/woff2/ttf)'),
-								h('option', { value: 'external' }, 'لینک CSS خارجی'),
-							]
-						),
-					]),
-					settings.font_mode === 'preset'
-						? h('div', { className: 'nm-form-row nm-form-row--stack', key: 'fp' }, [
-								h('label', { className: 'nm-field-label' }, 'فونت آماده'),
-								h(
-									'select',
-									{
-										value: settings.font_preset || 'vazir',
-										onChange: (e) => setSettings({ ...settings, font_preset: e.target.value }),
-									},
-									Object.entries(fontPresets).map(([id, p]) => h('option', { key: id, value: id }, p.label || id))
-								),
-						  ])
-						: null,
-					settings.font_mode === 'upload'
-						? h('div', { className: 'nm-font-upload', key: 'fu' }, [
-								h('label', { className: 'nm-field-label' }, 'نام فونت (font-family)'),
-								h('input', {
-									type: 'text',
-									value: settings.font_family_name || '',
-									placeholder: 'مثلاً MyClinicFont',
-									onChange: (e) => setSettings({ ...settings, font_family_name: e.target.value }),
-								}),
-								h('div', { className: 'nm-font-upload__row' }, [
-									h('div', {}, [
-										h('strong', {}, 'Regular'),
-										h('p', {}, (fontFiles.regular && fontFiles.regular.filename) || 'انتخاب نشده'),
-										h(
-											'button',
-											{
-												type: 'button',
-												className: 'nm-btn nm-btn--outline nm-btn--sm',
-												onClick: () =>
-													pickFontFile((file) => {
-														setFontFiles({ ...fontFiles, regular: file });
-														setSettings({ ...settings, font_regular_id: file.id });
-													}),
-											},
-											'انتخاب فایل'
-										),
-									]),
-									h('div', {}, [
-										h('strong', {}, 'Bold (اختیاری)'),
-										h('p', {}, (fontFiles.bold && fontFiles.bold.filename) || 'انتخاب نشده'),
-										h(
-											'button',
-											{
-												type: 'button',
-												className: 'nm-btn nm-btn--outline nm-btn--sm',
-												onClick: () =>
-													pickFontFile((file) => {
-														setFontFiles({ ...fontFiles, bold: file });
-														setSettings({ ...settings, font_bold_id: file.id });
-													}),
-											},
-											'انتخاب فایل'
-										),
-									]),
-								]),
-						  ])
-						: null,
-					settings.font_mode === 'external'
-						? h('div', { className: 'nm-form-row nm-form-row--stack', key: 'fe' }, [
-								h('label', { className: 'nm-field-label' }, 'نام فونت'),
-								h('input', {
-									type: 'text',
-									value: settings.font_family_name || '',
-									onChange: (e) => setSettings({ ...settings, font_family_name: e.target.value }),
-								}),
-								h('label', { className: 'nm-field-label' }, 'URL فایل CSS (@font-face)'),
-								h('input', {
-									type: 'url',
-									value: settings.font_external_url || '',
-									placeholder: 'https://...',
-									onChange: (e) => setSettings({ ...settings, font_external_url: e.target.value }),
-								}),
-						  ])
-						: null,
-					h('div', { className: 'nm-font-apply', key: 'apply' }, [
-						h('span', { className: 'nm-field-label' }, 'اعمال فونت روی:'),
-						h('label', { className: 'nm-check-inline' }, [
-							h('input', {
-								type: 'checkbox',
-								checked: settings.font_apply_frontend !== false,
-								onChange: (e) => setSettings({ ...settings, font_apply_frontend: e.target.checked }),
-							}),
-							'قالب (فرانت)',
-						]),
-						h('label', { className: 'nm-check-inline' }, [
-							h('input', {
-								type: 'checkbox',
-								checked: settings.font_apply_admin !== false,
-								onChange: (e) => setSettings({ ...settings, font_apply_admin: e.target.checked }),
-							}),
-							'پنل ادمین نوبت‌مد',
-						]),
-						h('label', { className: 'nm-check-inline' }, [
-							h('input', {
-								type: 'checkbox',
-								checked: settings.font_apply_elementor !== false,
-								onChange: (e) => setSettings({ ...settings, font_apply_elementor: e.target.checked }),
-							}),
-							'ویجت Elementor',
-						]),
-					]),
-					h('p', { className: 'nm-panel__meta' }, 'برای ویجت‌های آینده از تابع nobatmed_get_appearance_font_family() استفاده کنید.'),
-				]),
 				h('section', { className: 'nm-panel nm-appearance-preview', key: 'preview', style: previewStyle }, [
 					h('div', { className: 'nm-panel__head' }, h('h3', {}, 'پیش‌نمایش')),
 					h('div', { className: 'nm-preview-card' }, [
@@ -846,6 +749,191 @@
 						h('button', { type: 'button', className: 'nm-preview-btn' }, 'رزرو نوبت'),
 					]),
 				]),
+			]),
+			h('section', { className: 'nm-panel nm-panel--full', key: 'fonts' }, [
+				h('div', { className: 'nm-panel__head' }, h('h3', {}, 'فونت')),
+				h('div', { className: 'nm-font-toolbar' }, [
+					h('label', { className: 'nm-field-label' }, 'منبع فونت'),
+					h(
+						'select',
+						{
+							value: settings.font_mode || 'default',
+							onChange: (e) => setSettings({ ...settings, font_mode: e.target.value }),
+						},
+						[
+							h('option', { value: 'default' }, 'پیش‌فرض (Vazir)'),
+							h('option', { value: 'preset' }, 'فونت آماده'),
+							h('option', { value: 'upload' }, 'آپلود فونت سفارشی'),
+							h('option', { value: 'external' }, 'لینک CSS خارجی'),
+						]
+					),
+				]),
+				settings.font_mode === 'preset'
+					? h('div', { className: 'nm-font-toolbar', key: 'fp' }, [
+							h('label', { className: 'nm-field-label' }, 'فونت آماده'),
+							h(
+								'select',
+								{
+									value: settings.font_preset || 'vazir',
+									onChange: (e) => setSettings({ ...settings, font_preset: e.target.value }),
+								},
+								Object.entries(fontPresets).map(([id, p]) => h('option', { key: id, value: id }, p.label || id))
+							),
+					  ])
+					: null,
+				settings.font_mode === 'upload'
+					? h('div', { className: 'nm-font-upload-block', key: 'fu' }, [
+							h('label', { className: 'nm-field-label' }, 'نام فونت (font-family)'),
+							h('input', {
+								type: 'text',
+								className: 'nm-font-family-input',
+								value: settings.font_family_name || '',
+								placeholder: 'مثلاً MyClinicFont',
+								onChange: (e) => setSettings({ ...settings, font_family_name: e.target.value }),
+							}),
+							h('div', { className: 'nm-font-repeater-head' }, [
+								h('span', {}, 'وزن'),
+								h('span', {}, 'استایل'),
+								h('span', {}, 'فایل'),
+								h('span', {}, ''),
+							]),
+							h(
+								'div',
+								{ className: 'nm-font-repeater' },
+								(settings.font_weights && settings.font_weights.length
+									? settings.font_weights
+									: [{ weight: 400, style: 'normal', attachment_id: 0 }]
+								).map((row, index) => {
+									const fileMeta =
+										(fontFiles.weights || []).find((w) => w.attachment_id === row.attachment_id)?.file ||
+										row.file ||
+										null;
+									return h('div', { key: 'fw-' + index, className: 'nm-font-repeater__row' }, [
+										h(
+											'select',
+											{
+												value: String(row.weight || 400),
+												onChange: (e) => {
+													const next = [...(settings.font_weights || [{ weight: 400, style: 'normal', attachment_id: 0 }])];
+													next[index] = { ...next[index], weight: parseInt(e.target.value, 10) };
+													setSettings({ ...settings, font_weights: next });
+												},
+											},
+											[100, 200, 300, 400, 500, 600, 700, 800, 900].map((w) =>
+												h('option', { key: w, value: String(w) }, w)
+											)
+										),
+										h(
+											'select',
+											{
+												value: row.style || 'normal',
+												onChange: (e) => {
+													const next = [...(settings.font_weights || [])];
+													next[index] = { ...next[index], style: e.target.value };
+													setSettings({ ...settings, font_weights: next });
+												},
+											},
+											[h('option', { value: 'normal' }, 'Normal'), h('option', { value: 'italic' }, 'Italic')]
+										),
+										h('div', { className: 'nm-font-repeater__file' }, [
+											h('span', {}, fileMeta ? fileMeta.filename : 'فایل انتخاب نشده'),
+											h(
+												'button',
+												{
+													type: 'button',
+													className: 'nm-btn nm-btn--outline nm-btn--sm',
+													onClick: () =>
+														pickFontFile((file) => {
+															const next = [...(settings.font_weights || [])];
+															next[index] = {
+																...next[index],
+																attachment_id: file.id,
+																file,
+															};
+															setSettings({ ...settings, font_weights: next });
+														}),
+												},
+												'انتخاب'
+											),
+										]),
+										h(
+											'button',
+											{
+												type: 'button',
+												className: 'nm-btn nm-btn--ghost nm-btn--sm',
+												onClick: () => {
+													const next = (settings.font_weights || []).filter((_, i) => i !== index);
+													setSettings({ ...settings, font_weights: next.length ? next : [{ weight: 400, style: 'normal', attachment_id: 0 }] });
+												},
+											},
+											'حذف'
+										),
+									]);
+								})
+							),
+							h(
+								'button',
+								{
+									type: 'button',
+									className: 'nm-btn nm-btn--outline nm-btn--sm',
+									onClick: () =>
+										setSettings({
+											...settings,
+											font_weights: [
+												...(settings.font_weights || []),
+												{ weight: 400, style: 'normal', attachment_id: 0 },
+											],
+										}),
+								},
+								'+ افزودن وزن فونت'
+							),
+					  ])
+					: null,
+				settings.font_mode === 'external'
+					? h('div', { className: 'nm-font-toolbar nm-font-toolbar--stack', key: 'fe' }, [
+							h('label', { className: 'nm-field-label' }, 'نام فونت'),
+							h('input', {
+								type: 'text',
+								value: settings.font_family_name || '',
+								onChange: (e) => setSettings({ ...settings, font_family_name: e.target.value }),
+							}),
+							h('label', { className: 'nm-field-label' }, 'URL فایل CSS (@font-face)'),
+							h('input', {
+								type: 'url',
+								value: settings.font_external_url || '',
+								placeholder: 'https://...',
+								onChange: (e) => setSettings({ ...settings, font_external_url: e.target.value }),
+							}),
+					  ])
+					: null,
+				h('div', { className: 'nm-font-apply', key: 'apply' }, [
+					h('span', { className: 'nm-field-label' }, 'اعمال فونت روی:'),
+					h('label', { className: 'nm-check-inline' }, [
+						h('input', {
+							type: 'checkbox',
+							checked: settings.font_apply_frontend !== false,
+							onChange: (e) => setSettings({ ...settings, font_apply_frontend: e.target.checked }),
+						}),
+						'قالب (فرانت)',
+					]),
+					h('label', { className: 'nm-check-inline' }, [
+						h('input', {
+							type: 'checkbox',
+							checked: settings.font_apply_admin !== false,
+							onChange: (e) => setSettings({ ...settings, font_apply_admin: e.target.checked }),
+						}),
+						'پنل ادمین نوبت‌مد',
+					]),
+					h('label', { className: 'nm-check-inline' }, [
+						h('input', {
+							type: 'checkbox',
+							checked: settings.font_apply_elementor !== false,
+							onChange: (e) => setSettings({ ...settings, font_apply_elementor: e.target.checked }),
+						}),
+						'ویجت Elementor',
+					]),
+				]),
+				h('p', { className: 'nm-panel__meta' }, 'هر وزن (Thin تا Black) و Italic را جداگانه آپلود کنید — از nobatmed_get_appearance_font_family() در ویجت‌ها استفاده کنید.'),
 			]),
 		]);
 	}
@@ -1230,6 +1318,68 @@
 		]);
 	}
 
+	function ImportDemoPage() {
+		const [catalog, setCatalog] = useState(null);
+		const [loading, setLoading] = useState(true);
+		const [busy, setBusy] = useState(null);
+		const [notice, setNotice] = useState(null);
+
+		useEffect(() => {
+			request('/demos/catalog')
+				.then((res) => setCatalog((res && res.data) || null))
+				.catch(() => setNotice({ type: 'error', text: 'بارگذاری کاتالوگ دمو با خطا مواجه شد.' }))
+				.finally(() => setLoading(false));
+		}, []);
+
+		const installDemo = (demo) => {
+			if (!demo || demo.status === 'coming_soon') {
+				setNotice({ type: 'warning', text: 'این دمو هنوز در Demo Hub فعال نشده.' });
+				return;
+			}
+			setBusy(demo.id);
+			setNotice(null);
+			request('/demos/install', { method: 'POST', data: { id: demo.id } })
+				.then((res) => setNotice({ type: res.success ? 'success' : 'error', text: res.message || 'نصب دمو.' }))
+				.catch(() => setNotice({ type: 'error', text: 'نصب دمو با خطا مواجه شد.' }))
+				.finally(() => setBusy(null));
+		};
+
+		const demos = (catalog && catalog.demos) || [];
+
+		return h('div', { className: 'nm-page' }, [
+			h('header', { className: 'nm-page-header', key: 'head' }, [
+				h('h2', {}, strings.importdemo || 'Import Demo'),
+				h('p', {}, catalog && catalog.message ? catalog.message : 'دموها از nexaverse.ir دریافت و نصب می‌شوند.'),
+			]),
+			notice ? h('div', { className: 'nm-notice nm-notice--' + notice.type, key: 'n' }, notice.text) : null,
+			loading
+				? h('p', { key: 'load' }, 'در حال بارگذاری کاتالوگ...')
+				: h('div', { className: 'nm-demo-grid', key: 'grid' }, [
+						...demos.map((demo) =>
+							h('article', { key: demo.id, className: 'nm-demo-card' + (demo.status === 'coming_soon' ? ' is-soon' : '') }, [
+								h('span', { className: 'nm-demo-card__badge' }, demo.status === 'coming_soon' ? 'به‌زودی' : 'آماده'),
+								h('h4', {}, demo.name || demo.id),
+								h('p', {}, demo.description || ''),
+								h(
+									'button',
+									{
+										type: 'button',
+										className: 'nm-btn nm-btn--primary nm-btn--sm',
+										disabled: busy === demo.id || demo.status === 'coming_soon',
+										onClick: () => installDemo(demo),
+									},
+									busy === demo.id ? 'در حال نصب...' : 'نصب دمو'
+								),
+							])
+						),
+						!demos.length ? h('p', { className: 'nm-panel__meta' }, 'دموئی در کاتالوگ نیست.') : null,
+				  ]),
+			catalog && catalog.catalogUrl
+				? h('p', { className: 'nm-panel__meta', key: 'url' }, 'Catalog URL: ' + catalog.catalogUrl)
+				: null,
+		]);
+	}
+
 	function ImportExportPage() {
 		const [manifest, setManifest] = useState([]);
 		const [selected, setSelected] = useState([]);
@@ -1463,7 +1613,7 @@
 			return h(AppChrome, {}, h(LicensePanel));
 		}
 
-		const [page, setPage] = useState('dashboard');
+		const [page, setPage] = useState(cfg.initialPage || 'dashboard');
 		const [data, setData] = useState(null);
 		const [loading, setLoading] = useState(true);
 		const [error, setError] = useState(null);
@@ -1502,6 +1652,7 @@
 			notices: strings.notices || 'اعلان‌ها',
 			addons: strings.addons || 'افزونه‌ها',
 			importexport: strings.importexport || 'Import / Export',
+			importdemo: strings.importdemo || 'Import Demo',
 		};
 
 		return h(AppChrome, {}, h('div', { className: 'nm-app' }, [
@@ -1546,6 +1697,7 @@
 						: null,
 					page === 'addons' ? h(AddonsPage, { modules: data.modules || [] }) : null,
 					page === 'importexport' ? h(ImportExportPage) : null,
+					page === 'importdemo' ? h(ImportDemoPage) : null,
 				]),
 			]),
 		]));

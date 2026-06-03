@@ -52,6 +52,146 @@
 
 .nm-el-btn--block { width: 100%; }
 
+.nm-el-btn--outline {
+	background: transparent;
+	color: var(--cl-brand, #3b82f6);
+	border: 1px solid var(--cl-border, #e2e8f0);
+}
+
+.nm-el-clinics {
+	display: grid;
+	gap: 16px;
+	font-family: var(--cl-font-family, Vazir, Tahoma, sans-serif);
+}
+
+.nm-el-clinic {
+	background: var(--cl-surface, #fff);
+	border: 1px solid var(--cl-border, #e2e8f0);
+	border-radius: var(--cl-radius, 14px);
+	padding: 16px;
+	text-align: center;
+}
+
+.nm-el-clinic__thumb {
+	width: 100%;
+	max-height: 140px;
+	object-fit: cover;
+	border-radius: 10px;
+	margin-bottom: 10px;
+}
+
+.nm-el-clinic__title { margin: 0 0 6px; font-size: 1rem; }
+.nm-el-clinic__meta,
+.nm-el-clinic__phone { margin: 0 0 8px; color: var(--cl-muted, #64748b); font-size: 0.875rem; }
+
+.nm-el-clinic__hours {
+	margin: 0 0 12px;
+	padding: 10px;
+	background: #f8fafc;
+	border-radius: 8px;
+	font-size: 0.8125rem;
+	white-space: pre-wrap;
+	text-align: start;
+}
+
+.nm-el-services {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	font-family: var(--cl-font-family, Vazir, Tahoma, sans-serif);
+}
+
+.nm-el-service {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 14px;
+	border: 1px solid var(--cl-border, #e2e8f0);
+	border-radius: 10px;
+	background: var(--cl-surface, #fff);
+}
+
+.nm-el-service__body { display: flex; flex-direction: column; gap: 4px; }
+.nm-el-service__title { font-size: 0.9375rem; }
+.nm-el-service__meta { font-size: 0.8125rem; color: var(--cl-muted, #64748b); }
+.nm-el-service__price { font-weight: 700; color: var(--cl-brand, #3b82f6); white-space: nowrap; }
+
+.nm-el-doctor--card,
+.nm-el-clinic--card,
+.nm-el-service-card {
+	max-width: 360px;
+	margin-inline: auto;
+}
+
+.nm-el-doctor__phone { margin: 0 0 12px; font-size: 0.875rem; color: var(--cl-muted, #64748b); }
+
+.nm-el-specialties { font-family: var(--cl-font-family, Vazir, Tahoma, sans-serif); }
+.nm-el-specialties__title { margin: 0 0 10px; font-size: 1rem; }
+.nm-el-specialties__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.nm-el-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 12px;
+	border-radius: 999px;
+	border: 1px solid var(--cl-border, #e2e8f0);
+	background: var(--cl-surface, #fff);
+	color: inherit;
+	text-decoration: none;
+	font-size: 0.8125rem;
+}
+
+.nm-el-chip:hover { border-color: var(--cl-brand, #3b82f6); color: var(--cl-brand, #3b82f6); }
+
+.nm-el-schedule {
+	background: var(--cl-surface, #fff);
+	border: 1px solid var(--cl-border, #e2e8f0);
+	border-radius: var(--cl-radius, 14px);
+	padding: 16px;
+	font-family: var(--cl-font-family, Vazir, Tahoma, sans-serif);
+}
+
+.nm-el-schedule__title { margin: 0 0 12px; font-size: 1rem; }
+
+.nm-el-schedule__table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.875rem;
+}
+
+.nm-el-schedule__table th,
+.nm-el-schedule__table td {
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--cl-border, #e2e8f0);
+	text-align: start;
+}
+
+.nm-el-schedule__table th { width: 38%; color: var(--cl-muted, #64748b); font-weight: 600; }
+
+.nm-el-service-card {
+	background: var(--cl-surface, #fff);
+	border: 1px solid var(--cl-border, #e2e8f0);
+	border-radius: var(--cl-radius, 14px);
+	padding: 18px;
+	font-family: var(--cl-font-family, Vazir, Tahoma, sans-serif);
+}
+
+.nm-el-service-card__title { margin: 0 0 8px; font-size: 1.05rem; }
+.nm-el-service-card__desc { margin: 0 0 12px; color: var(--cl-muted, #64748b); font-size: 0.875rem; line-height: 1.6; }
+
+.nm-el-service-card__meta {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 14px;
+	font-size: 0.875rem;
+}
+
 .nm-el-search {
 	display: flex;
 	flex-wrap: wrap;

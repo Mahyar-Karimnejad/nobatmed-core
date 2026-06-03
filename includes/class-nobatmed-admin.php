@@ -12,7 +12,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class NobatMed_Admin {
 
-	public const PAGE_SLUG = 'nobatmed-core';
+	public const PAGE_SLUG      = 'nobatmed-core';
+	public const DEMO_PAGE_SLUG = 'nobatmed-import-demo';
 
 	/**
 	 * @var NobatMed_Core
@@ -53,12 +54,45 @@ class NobatMed_Admin {
 			self::PAGE_SLUG,
 			array( $this, 'render_admin' )
 		);
+
+		add_submenu_page(
+			self::PAGE_SLUG,
+			__( 'Import Demo', 'nobatmed-core' ),
+			__( 'Import Demo', 'nobatmed-core' ),
+			'manage_options',
+			self::DEMO_PAGE_SLUG,
+			array( $this, 'render_import_demo' )
+		);
+	}
+
+	public function is_core_admin_screen( string $hook ): bool {
+		return in_array(
+			$hook,
+			array(
+				'toplevel_page_' . self::PAGE_SLUG,
+				'nobatmed-core_page_' . self::DEMO_PAGE_SLUG,
+			),
+			true
+		);
+	}
+
+	public function render_import_demo(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		?>
+		<div class="wrap nobatmed-core-wrap">
+			<div id="nobatmed-core-admin" class="nobatmed-core-admin"></div>
+		</div>
+		<?php
 	}
 
 	public function enqueue_assets( string $hook ): void {
-		if ( 'toplevel_page_' . self::PAGE_SLUG !== $hook ) {
+		if ( ! $this->is_core_admin_screen( $hook ) ) {
 			return;
 		}
+
+		$initial_page = ( 'toplevel_page_' . self::PAGE_SLUG === $hook ) ? 'dashboard' : 'importdemo';
 
 		add_filter(
 			'admin_body_class',
@@ -105,8 +139,10 @@ class NobatMed_Admin {
 						'booking'   => __( 'نوبت‌دهی', 'nobatmed-core' ),
 						'addons'    => __( 'افزونه‌ها', 'nobatmed-core' ),
 						'importexport' => __( 'Import / Export', 'nobatmed-core' ),
+						'importdemo'   => __( 'Import Demo', 'nobatmed-core' ),
 						'notices'   => __( 'اعلان‌ها', 'nobatmed-core' ),
 					),
+					'initialPage'    => $initial_page,
 				)
 			),
 			'before'

@@ -26,6 +26,17 @@ class NobatMed_Theme_Appearance {
 		add_action( 'elementor/frontend/after_enqueue_styles', array( self::class, 'enqueue_elementor_font_css' ) );
 	}
 
+	private static function is_core_admin_screen( string $hook ): bool {
+		return in_array(
+			$hook,
+			array(
+				'toplevel_page_' . NobatMed_Admin::PAGE_SLUG,
+				'nobatmed-core_page_' . NobatMed_Admin::DEMO_PAGE_SLUG,
+			),
+			true
+		);
+	}
+
 	/**
 	 * @return array<string,mixed>
 	 */
@@ -43,6 +54,7 @@ class NobatMed_Theme_Appearance {
 			'font_mode'           => 'default',
 			'font_preset'         => 'vazir',
 			'font_family_name'    => 'Vazir',
+			'font_weights'        => array(),
 			'font_regular_id'     => 0,
 			'font_bold_id'        => 0,
 			'font_external_url'   => '',
@@ -62,7 +74,72 @@ class NobatMed_Theme_Appearance {
 		if ( ! is_array( $stored ) ) {
 			return self::defaults();
 		}
-		return wp_parse_args( self::sanitize( $stored ), self::defaults() );
+		$settings = wp_parse_args( self::sanitize( $stored ), self::defaults() );
+		return self::migrate_font_settings( $settings );
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Settings.
+	 * @return array<string,mixed>
+	 */
+	private static function migrate_font_settings( array $settings ): array {
+		if ( ! empty( $settings['font_weights'] ) && is_array( $settings['font_weights'] ) ) {
+			return $settings;
+		}
+
+		$weights = array();
+		if ( ! empty( $settings['font_regular_id'] ) ) {
+			$weights[] = array(
+				'weight'        => 400,
+				'style'         => 'normal',
+				'attachment_id' => (int) $settings['font_regular_id'],
+			);
+		}
+		if ( ! empty( $settings['font_bold_id'] ) ) {
+			$weights[] = array(
+				'weight'        => 700,
+				'style'         => 'normal',
+				'attachment_id' => (int) $settings['font_bold_id'],
+			);
+		}
+
+		$settings['font_weights'] = $weights;
+		return $settings;
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Settings.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public static function normalize_font_weights( array $settings ): array {
+		$settings = self::migrate_font_settings( $settings );
+		$rows     = isset( $settings['font_weights'] ) && is_array( $settings['font_weights'] )
+			? $settings['font_weights']
+			: array();
+		$clean = array();
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$attachment_id = max( 0, (int) ( $row['attachment_id'] ?? 0 ) );
+			if ( $attachment_id <= 0 ) {
+				continue;
+			}
+			$weight = max( 100, min( 900, (int) ( $row['weight'] ?? 400 ) ) );
+			$weight = (int) ( round( $weight / 100 ) * 100 );
+			$style  = in_array( (string) ( $row['style'] ?? 'normal' ), array( 'normal', 'italic' ), true )
+				? (string) $row['style']
+				: 'normal';
+
+			$clean[] = array(
+				'weight'        => $weight,
+				'style'         => $style,
+				'attachment_id' => $attachment_id,
+			);
+		}
+
+		return $clean;
 	}
 
 	/**
@@ -113,6 +190,30 @@ class NobatMed_Theme_Appearance {
 			if ( isset( $input[ $id_key ] ) ) {
 				$out[ $id_key ] = max( 0, (int) $input[ $id_key ] );
 			}
+		}
+
+		if ( isset( $input['font_weights'] ) && is_array( $input['font_weights'] ) ) {
+			$weights = array();
+			foreach ( $input['font_weights'] as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$attachment_id = max( 0, (int) ( $row['attachment_id'] ?? 0 ) );
+				if ( $attachment_id <= 0 ) {
+					continue;
+				}
+				$weight = max( 100, min( 900, (int) ( $row['weight'] ?? 400 ) ) );
+				$weight = (int) ( round( $weight / 100 ) * 100 );
+				$style  = in_array( (string) ( $row['style'] ?? 'normal' ), array( 'normal', 'italic' ), true )
+					? (string) $row['style']
+					: 'normal';
+				$weights[] = array(
+					'weight'        => $weight,
+					'style'         => $style,
+					'attachment_id' => $attachment_id,
+				);
+			}
+			$out['font_weights'] = $weights;
 		}
 
 		if ( isset( $input['font_external_url'] ) ) {
@@ -203,13 +304,25 @@ class NobatMed_Theme_Appearance {
 	}
 
 	/**
+	 * @return array<int,array<string,mixed>>
+	 */
+	public static function get_font_weights_for_api(): array {
+		$list = array();
+		foreach ( self::normalize_font_weights( self::get_settings() ) as $row ) {
+			$list[] = array_merge(
+				$row,
+				array( 'file' => self::attachment_payload( (int) $row['attachment_id'] ) )
+			);
+		}
+		return $list;
+	}
+
+	/**
 	 * @return array<string,mixed>
 	 */
 	public static function get_font_files_for_api(): array {
-		$s = self::get_settings();
 		return array(
-			'regular' => self::attachment_payload( (int) ( $s['font_regular_id'] ?? 0 ) ),
-			'bold'    => self::attachment_payload( (int) ( $s['font_bold_id'] ?? 0 ) ),
+			'weights' => self::get_font_weights_for_api(),
 		);
 	}
 
@@ -248,14 +361,17 @@ class NobatMed_Theme_Appearance {
 		}
 
 		$css = '';
-		$regular = self::attachment_payload( (int) ( $s['font_regular_id'] ?? 0 ) );
-		$bold    = self::attachment_payload( (int) ( $s['font_bold_id'] ?? 0 ) );
-
-		if ( $regular ) {
-			$css .= self::font_face_rule( $name, 400, 'normal', $regular['url'] );
-		}
-		if ( $bold ) {
-			$css .= self::font_face_rule( $name, 700, 'normal', $bold['url'] );
+		foreach ( self::normalize_font_weights( $s ) as $row ) {
+			$file = self::attachment_payload( (int) $row['attachment_id'] );
+			if ( ! $file ) {
+				continue;
+			}
+			$css .= self::font_face_rule(
+				$name,
+				(int) $row['weight'],
+				(string) $row['style'],
+				$file['url']
+			);
 		}
 
 		return apply_filters( 'nobatmed_theme_appearance_font_face_css', $css, $s );
@@ -355,7 +471,7 @@ class NobatMed_Theme_Appearance {
 	}
 
 	public static function enqueue_admin_font_assets( string $hook ): void {
-		if ( 'toplevel_page_' . NobatMed_Admin::PAGE_SLUG !== $hook ) {
+		if ( ! self::is_core_admin_screen( $hook ) ) {
 			return;
 		}
 		if ( empty( self::get_settings()['font_apply_admin'] ) ) {
@@ -396,7 +512,7 @@ class NobatMed_Theme_Appearance {
 	}
 
 	public static function enqueue_admin_css( string $hook ): void {
-		if ( 'toplevel_page_' . NobatMed_Admin::PAGE_SLUG !== $hook ) {
+		if ( ! self::is_core_admin_screen( $hook ) ) {
 			return;
 		}
 
@@ -461,6 +577,7 @@ class NobatMed_Theme_Appearance {
 			'presets'     => self::presets(),
 			'fontPresets' => self::font_presets(),
 			'fontFiles'   => self::get_font_files_for_api(),
+			'fontWeightOptions' => array( 100, 200, 300, 400, 500, 600, 700, 800, 900 ),
 			'fontStack'   => self::get_font_family_stack(),
 		);
 	}
