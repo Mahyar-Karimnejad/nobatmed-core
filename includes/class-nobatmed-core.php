@@ -56,6 +56,7 @@ final class NobatMed_Core {
 
 		NobatMed_Orbit_Bridge::init();
 		NobatMed_Theme_Appearance::init();
+		NobatMed_Import_Export::init();
 
 		// REST must register on every request (wp-json runs outside is_admin).
 		$this->admin->init();

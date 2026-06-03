@@ -1,0 +1,117 @@
+.nm-el-doctors {
+	display: grid;
+	gap: 16px;
+	font-family: var(--cl-font-family, Vazir, Tahoma, sans-serif);
+}
+
+.nm-el-cols-1 { grid-template-columns: 1fr; }
+.nm-el-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nm-el-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.nm-el-doctor {
+	background: var(--cl-surface, #fff);
+	border: 1px solid var(--cl-border, #e2e8f0);
+	border-radius: var(--cl-radius, 14px);
+	padding: 16px;
+	text-align: center;
+}
+
+.nm-el-doctor__thumb {
+	width: 80px;
+	height: 80px;
+	object-fit: cover;
+	border-radius: 50%;
+	margin-bottom: 10px;
+}
+
+.nm-el-doctor__title {
+	margin: 0 0 6px;
+	font-size: 1rem;
+}
+
+.nm-el-doctor__meta {
+	margin: 0 0 12px;
+	color: var(--cl-muted, #64748b);
+	font-size: 0.875rem;
+}
+
+.nm-el-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 14px;
+	border-radius: 10px;
+	border: none;
+	background: var(--cl-gradient, linear-gradient(140deg, #3b82f6, #6366f1));
+	color: #fff;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.nm-el-btn--block { width: 100%; }
+
+.nm-el-search {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.nm-el-search__input {
+	flex: 1;
+	min-width: 180px;
+	padding: 10px 12px;
+	border: 1px solid var(--cl-border, #e2e8f0);
+	border-radius: 10px;
+	font-family: inherit;
+}
+
+.nm-el-booking {
+	background: var(--cl-surface, #fff);
+	border: 1px solid var(--cl-border, #e2e8f0);
+	border-radius: var(--cl-radius, 14px);
+	padding: 20px;
+	font-family: var(--cl-font-family, Vazir, Tahoma, sans-serif);
+}
+
+.nm-el-booking__title { margin: 0 0 14px; }
+
+.nm-el-booking__field {
+	display: block;
+	margin-bottom: 12px;
+}
+
+.nm-el-booking__field span {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 0.8125rem;
+	color: var(--cl-muted, #64748b);
+}
+
+.nm-el-booking__field select,
+.nm-el-booking__field input {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid var(--cl-border, #e2e8f0);
+	border-radius: 8px;
+	font-family: inherit;
+}
+
+.nm-el-booking__note {
+	margin: 10px 0 0;
+	font-size: 0.75rem;
+	color: var(--cl-muted, #64748b);
+}
+
+.nm-el-empty {
+	color: var(--cl-muted, #64748b);
+	font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+	.nm-el-cols-2,
+	.nm-el-cols-3 {
+		grid-template-columns: 1fr;
+	}
+}

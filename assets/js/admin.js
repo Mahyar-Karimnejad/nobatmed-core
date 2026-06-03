@@ -10,7 +10,7 @@
 		return apiFetch({ path: '/nobatmed-core/v1' + path, ...options });
 	}
 
-	const ICONS = { dashboard: '◉', modules: '▦', appearance: '◐', plugins: '⬡', booking: '◷', addons: '✦', notices: '◈' };
+	const ICONS = { dashboard: '◉', modules: '▦', appearance: '◐', plugins: '⬡', booking: '◷', addons: '✦', notices: '◈', importexport: '⇅' };
 
 	const DEV_STATUS = {
 		done: { label: 'آماده', className: 'nm-tag--done' },
@@ -214,6 +214,7 @@
 			{ id: 'booking', label: strings.booking || 'نوبت‌دهی' },
 			{ id: 'notices', label: strings.notices || 'اعلان‌ها' },
 			{ id: 'addons', label: strings.addons || 'افزونه‌ها' },
+			{ id: 'importexport', label: strings.importexport || 'Import / Export', parent: 'addons' },
 		];
 
 		return h('aside', { className: 'nm-sidebar' }, [
@@ -1229,6 +1230,182 @@
 		]);
 	}
 
+	function ImportExportPage() {
+		const [manifest, setManifest] = useState([]);
+		const [selected, setSelected] = useState([]);
+		const [mode, setMode] = useState('merge');
+		const [loading, setLoading] = useState(true);
+		const [busy, setBusy] = useState(false);
+		const [notice, setNotice] = useState(null);
+		const [importBundle, setImportBundle] = useState(null);
+
+		useEffect(() => {
+			request('/import-export/manifest')
+				.then((res) => {
+					const sections = (res.data && res.data.sections) || [];
+					setManifest(sections);
+					setSelected(sections.filter((s) => s.implemented && s.export).map((s) => s.id));
+				})
+				.finally(() => setLoading(false));
+		}, []);
+
+		const toggleSection = (id, on) => {
+			setSelected((prev) => (on ? [...new Set([...prev, id])] : prev.filter((x) => x !== id)));
+		};
+
+		const downloadJson = (data, filename) => {
+			const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			a.click();
+			URL.revokeObjectURL(url);
+		};
+
+		const handleExport = () => {
+			if (!selected.length) {
+				setNotice({ type: 'error', text: 'حداقل یک بخش انتخاب کنید.' });
+				return;
+			}
+			setBusy(true);
+			setNotice(null);
+			request('/import-export/export', { method: 'POST', data: { sections: selected } })
+				.then((res) => {
+					if (res.data) {
+						const name = 'nobatmed-export-' + new Date().toISOString().slice(0, 10) + '.json';
+						downloadJson(res.data, name);
+						setNotice({ type: 'success', text: res.message || 'فایل export دانلود شد.' });
+					}
+				})
+				.catch(() => setNotice({ type: 'error', text: 'Export با خطا مواجه شد.' }))
+				.finally(() => setBusy(false));
+		};
+
+		const handleFile = (e) => {
+			const file = e.target.files && e.target.files[0];
+			if (!file) return;
+			const reader = new FileReader();
+			reader.onload = () => {
+				try {
+					const json = JSON.parse(reader.result);
+					setImportBundle(json);
+					setNotice({ type: 'success', text: 'فایل خوانده شد — بخش‌ها را انتخاب و Import کنید.' });
+				} catch (err) {
+					setImportBundle(null);
+					setNotice({ type: 'error', text: 'فایل JSON نامعتبر است.' });
+				}
+			};
+			reader.readAsText(file);
+		};
+
+		const handleImport = () => {
+			if (!importBundle) {
+				setNotice({ type: 'error', text: 'ابتدا فایل JSON را انتخاب کنید.' });
+				return;
+			}
+			setBusy(true);
+			request('/import-export/import', {
+				method: 'POST',
+				data: { bundle: importBundle, sections: selected, mode },
+			})
+				.then((res) => {
+					setNotice({ type: res.success ? 'success' : 'error', text: res.message || 'Import انجام شد.' });
+				})
+				.catch(() => setNotice({ type: 'error', text: 'Import با خطا مواجه شد.' }))
+				.finally(() => setBusy(false));
+		};
+
+		const groups = manifest.reduce((acc, s) => {
+			const g = s.group || 'other';
+			if (!acc[g]) acc[g] = [];
+			acc[g].push(s);
+			return acc;
+		}, {});
+
+		const groupLabels = {
+			settings: 'تنظیمات',
+			booking: 'نوبت‌دهی',
+			content: 'محتوا',
+			elementor: 'Elementor',
+			demos: 'دمو و بسته',
+			other: 'سایر',
+		};
+
+		const renderSections = (items) =>
+			items.map((s) =>
+				h('label', { key: s.id, className: 'nm-ie-section' + (s.implemented ? '' : ' is-soon') }, [
+					h('input', {
+						type: 'checkbox',
+						checked: selected.includes(s.id),
+						disabled: !s.implemented || (!s.export && !s.import),
+						onChange: (e) => toggleSection(s.id, e.target.checked),
+					}),
+					h('div', {}, [
+						h('strong', {}, s.label),
+						h('p', {}, s.description),
+						!s.implemented ? h('span', { className: 'nm-tag nm-tag--pending' }, 'به‌زودی') : null,
+					]),
+				])
+			);
+
+		return h('div', { className: 'nm-page' }, [
+			h('header', { className: 'nm-page-header', key: 'head' }, [
+				h('h2', {}, 'Import / Export'),
+				h('p', {}, 'پشتیبان‌گیری و بازیابی تنظیمات، ماژول‌ها، پروفایل‌ها — دمو و تمپلیت در فاز بعد.'),
+			]),
+			notice ? h('div', { className: 'nm-notice nm-notice--' + notice.type, key: 'n' }, notice.text) : null,
+			loading
+				? h('p', { key: 'load' }, 'در حال بارگذاری...')
+				: [
+						h('div', { className: 'nm-grid-2', key: 'grid' }, [
+							h('section', { className: 'nm-panel', key: 'exp' }, [
+								h('div', { className: 'nm-panel__head' }, h('h3', {}, 'Export')),
+								...Object.entries(groups).map(([g, items]) =>
+									h('div', { key: g, className: 'nm-ie-group' }, [
+										h('h4', {}, groupLabels[g] || g),
+										...renderSections(items),
+									])
+								),
+								h('button', {
+									type: 'button',
+									className: 'nm-btn nm-btn--primary',
+									disabled: busy,
+									onClick: handleExport,
+								}, busy ? '...' : 'دانلود JSON'),
+							]),
+							h('section', { className: 'nm-panel', key: 'imp' }, [
+								h('div', { className: 'nm-panel__head' }, h('h3', {}, 'Import')),
+								h('label', { className: 'nm-ie-file' }, [
+									h('span', {}, 'فایل JSON'),
+									h('input', { type: 'file', accept: 'application/json,.json', onChange: handleFile }),
+								]),
+								importBundle
+									? h('p', { className: 'nm-panel__meta' }, 'فرمت: ' + (importBundle.format || '?') + ' · ' + (importBundle.exported_at || ''))
+									: null,
+								h('label', { className: 'nm-field-label' }, 'حالت import'),
+								h(
+									'select',
+									{ value: mode, onChange: (e) => setMode(e.target.value) },
+									[
+										h('option', { value: 'merge' }, 'ادغام (merge) — بدون حذف'),
+										h('option', { value: 'replace' }, 'جایگزینی (replace) — پاک و import'),
+									]
+								),
+								h('p', { className: 'nm-panel__meta' }, 'بخش‌های انتخاب‌شده در ستون Export برای import اعمال می‌شوند.'),
+								h('button', {
+									type: 'button',
+									className: 'nm-btn nm-btn--primary',
+									style: { marginTop: '12px' },
+									disabled: busy || !importBundle,
+									onClick: handleImport,
+								}, busy ? 'در حال import...' : 'Import'),
+							]),
+						]),
+				  ],
+		]);
+	}
+
 	function AddonsPage({ modules }) {
 		const addons = modules.filter((m) => m.type === 'addon' || m.group === 'addons');
 
@@ -1324,6 +1501,7 @@
 			booking: strings.booking || 'نوبت‌دهی',
 			notices: strings.notices || 'اعلان‌ها',
 			addons: strings.addons || 'افزونه‌ها',
+			importexport: strings.importexport || 'Import / Export',
 		};
 
 		return h(AppChrome, {}, h('div', { className: 'nm-app' }, [
@@ -1367,6 +1545,7 @@
 						  })
 						: null,
 					page === 'addons' ? h(AddonsPage, { modules: data.modules || [] }) : null,
+					page === 'importexport' ? h(ImportExportPage) : null,
 				]),
 			]),
 		]));

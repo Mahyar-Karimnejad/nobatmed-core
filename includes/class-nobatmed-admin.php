@@ -104,6 +104,7 @@ class NobatMed_Admin {
 						'plugins'   => __( 'پلاگین‌ها', 'nobatmed-core' ),
 						'booking'   => __( 'نوبت‌دهی', 'nobatmed-core' ),
 						'addons'    => __( 'افزونه‌ها', 'nobatmed-core' ),
+						'importexport' => __( 'Import / Export', 'nobatmed-core' ),
 						'notices'   => __( 'اعلان‌ها', 'nobatmed-core' ),
 					),
 				)

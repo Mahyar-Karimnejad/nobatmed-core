@@ -82,14 +82,17 @@ class NobatMed_Module_Registry {
 			'elementor-widgets'   => self::entry(
 				'elementor-widgets',
 				__( 'ویجت‌های Elementor (پایه)', 'nobatmed-core' ),
-				__( '۱۰ ویجت رایگان در Core — فرم نوبت، لیست پزشک، جستجو.', 'nobatmed-core' ),
+				__( '۳ ویجت رایگان — لیست پزشک، جستجو، فرم نوبت (در حال تکمیل).', 'nobatmed-core' ),
 				'elementor',
 				'layout',
 				1,
 				array(
-					'requires'        => 'elementor/elementor.php',
-					'orbitProduct'    => 'nobatmed-elementor',
-					'addonPluginFile' => '',
+					'implemented'     => true,
+					'devStatus'         => 'progress',
+					'default'           => true,
+					'requires'          => 'elementor/elementor.php',
+					'orbitProduct'      => 'nobatmed-elementor',
+					'addonPluginFile'   => '',
 				)
 			),
 			'elementor-widget-pack' => self::entry(

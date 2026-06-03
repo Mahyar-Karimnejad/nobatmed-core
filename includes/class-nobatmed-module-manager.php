@@ -57,6 +57,7 @@ class NobatMed_Module_Manager {
 		$this->register( new NobatMed_Module_Roles( $this->core ) );
 		$this->register( new NobatMed_Module_Profiles( $this->core ) );
 		$this->register( new NobatMed_Module_Booking( $this->core ) );
+		$this->register( new NobatMed_Module_Elementor( $this->core ) );
 
 		/**
 		 * Filter module instances before boot.

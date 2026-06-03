@@ -538,6 +538,26 @@
 	cursor: pointer;
 }
 
+.nm-ie-group { margin-bottom: 14px; }
+.nm-ie-group h4 { font-size: 12px; color: var(--nm-muted); margin: 0 0 8px; }
+
+.nm-ie-section {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	padding: 10px;
+	border: 1px solid var(--nm-border);
+	border-radius: 10px;
+	margin-bottom: 8px;
+	cursor: pointer;
+}
+
+.nm-ie-section.is-soon { opacity: 0.65; cursor: not-allowed; }
+.nm-ie-section strong { display: block; font-size: 13px; }
+.nm-ie-section p { margin: 4px 0 0; font-size: 11px; color: var(--nm-muted); }
+
+.nm-ie-file input[type='file'] { display: block; margin-top: 6px; font-size: 12px; }
+
 @media (max-width: 900px) {
 	.nm-shell { padding: 12px 8px; min-height: auto; }
 	.nm-window { height: auto; max-height: none; min-height: 70vh; }
